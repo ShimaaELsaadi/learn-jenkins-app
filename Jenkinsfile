@@ -30,7 +30,7 @@ pipeline {
             steps{
                 sh '''
                 echo ''
-                find 'index.html'
+                find build -type f -iname "index.html"
                 npm test
                 '''
 
