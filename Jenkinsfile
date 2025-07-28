@@ -30,7 +30,7 @@ pipeline {
             steps{
                 sh '''
                 echo ''
-                grep 'index.html'
+                ls -la
                 npm test
                 '''
 
