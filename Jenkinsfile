@@ -30,7 +30,7 @@ pipeline {
             steps{
                 sh '''
                 echo ''
-                ls -la
+                find 'index.html'
                 npm test
                 '''
 
