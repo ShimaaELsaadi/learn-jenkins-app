@@ -37,15 +37,13 @@ pipeline {
                     }
                     steps{
                         sh '''
-                        echo ''
-                        find build -type f -iname "index.html"
                         npm test
                         '''
 
                     }
                     post{
                         always{
-                            junit 'test-results/junit.xml'
+                            junit 'jest-results/junit.xml'
                         }
                     }
 
