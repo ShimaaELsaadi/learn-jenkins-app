@@ -1,9 +1,10 @@
 pipeline {
     agent any
-    enviroment{
+    environment {
         NETLFIY_PROJ_ID = 'b010c224-fcda-4f8c-a068-3c3b6f63e8f2'
-        NETLFIY_AUTH_Token =  credentials('NETIFY-TOKEN')
+        NETLIFY_AUTH_TOKEN = credentials('NETIFY-TOKEN')
     }
+
 
     stages {
         stage('Build') {
