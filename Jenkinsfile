@@ -4,8 +4,6 @@ pipeline {
         NETLFIY_PROJ_ID = 'b010c224-fcda-4f8c-a068-3c3b6f63e8f2'
         NETLIFY_AUTH_TOKEN = credentials('NETIFY-TOKEN')
     }
-
-
     stages {
         stage('Build') {
             agent{
@@ -28,7 +26,6 @@ pipeline {
         stage('Tests') {
 
             parallel{
-
                 stage('Unit Test'){
                     agent{
                         docker{
@@ -40,7 +37,6 @@ pipeline {
                         sh '''
                         npm test
                         '''
-
                     }
                     post{
                         always{
@@ -49,6 +45,7 @@ pipeline {
                     }
 
                 }
+
                 stage('E2E Test'){
                     agent {
                         docker {
@@ -56,7 +53,6 @@ pipeline {
                             reuseNode true
                         }
                     }
-
                     steps {
                         sh '''
                             npm install serve
@@ -67,38 +63,80 @@ pipeline {
                     }
                     post{
                         always{
-                            publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'playwright-report', reportFiles: 'index.html', reportName: 'Playwright HTML Report', reportTitles: '', useWrapperFileDirectly: true])
+                            publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'playwright-report', reportFiles: 'index.html', reportName: 'Playwright local', reportTitles: '', useWrapperFileDirectly: true])
                         }
                     }
-                    
-
                 }
-
-
-
             }
-            
         }
-        
-        
-    
-        stage('Deploy') {
-                    agent {
-                        docker {
-                            image 'node:18-alpine'
-                            reuseNode true
-                        }
-                    }
-                    steps {
-                        sh '''
-                            npm install netlify-cli@20.1.1
-                            node_modules/.bin/netlify --version
-                            echo "Deploying to production. Site ID: $NETLFIY_PROJ_IDde"
-                            node_modules/.bin/netlify status
-                            node_modules/.bin/netlify deploy --dir=build --prod
-                        '''
-                    }
+        stage('Deploy staging') {
+            agent {
+                docker {
+                    image 'node:18-alpine'
+                    reuseNode true
+                }
+            }
+            steps {
+                sh '''
+                    npm install netlify-cli@20.1.1
+                    node_modules/.bin/netlify --version
+                    echo "Deploying to staging. Site ID: $NETLIFY_SITE_ID"
+                    node_modules/.bin/netlify status
+                    node_modules/.bin/netlify deploy --dir=build
+                '''
+            }
         }
-    }
+        stage('Approval to Deploy'){
+            timeout(time: 15, unit: 'MINUTES'){
+                input message: 'Do you wish to deploy to production?', ok: 'Yes, I am sure!'
+            }
 
+
+
+        }
+
+        stage('Deploy prod') {
+            agent {
+                docker {
+                    image 'node:18-alpine'
+                    reuseNode true
+                }
+            }
+            steps {
+                sh '''
+                    npm install netlify-cli@20.1.1
+                    node_modules/.bin/netlify --version
+                    echo "Deploying to production. Site ID: $NETLFIY_PROJ_ID"
+                    node_modules/.bin/netlify status
+                    node_modules/.bin/netlify deploy --dir=build --prod
+                '''
+            }
+        }
+
+        stage('Prod E2E') {
+            agent {
+                docker {
+                    image 'mcr.microsoft.com/playwright:v1.39.0-jammy'
+                    reuseNode true
+                }
+            }
+            environment {
+                CI_ENVIRONMENT_URL = 'https://incomparable-syrniki-7f6095.netlify.app/'
+            }
+            steps {
+                
+                sh '''
+                    
+                    npx playwright test  --reporter=html
+                '''
+            }
+
+            post {
+                always {
+                    publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'playwright-report', reportFiles: 'index.html', reportName: 'Playwright E2E', reportTitles: '', useWrapperFileDirectly: true])
+                }
+            }
+        }
+
+    }
 }
